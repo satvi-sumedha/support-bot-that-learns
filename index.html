@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Bot That Learns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vellum: #E3EAEE;
+    --panel: #F7FAFB;
+    --ink: #19283A;
+    --muted: #55667A;
+    --grid-minor: #D2DCE1;
+    --grid-major: #BFCCD3;
+    --amber: #C77C00;
+    --amber-wash: #F6E3B8;
+    --teal: #0A7C6E;
+    --teal-wash: #CBEBE5;
+    --dead: #8E9DAA;
+    --display: 'Big Shoulders Display', 'Arial Narrow', 'Roboto Condensed', Impact, sans-serif;
+    --body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--vellum); color: var(--ink); font-family: var(--body); line-height: 1.5; }
+  button { font-family: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  .page { max-width: 1120px; margin: 0 auto; padding: 20px 24px 56px; }
+
+  /* top bar */
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 16px;
+         padding-bottom: 14px; border-bottom: 2px solid var(--ink); flex-wrap: wrap; }
+  .brand { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: .01em; }
+  .who { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
+  .tabs { display: flex; border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; }
+  .tab { border: 0; background: transparent; padding: 6px 18px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .tab + .tab { border-left: 2px solid var(--ink); }
+  .tab[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+
+  /* live headline */
+  .lead { padding: 34px 0 6px; min-height: 176px; }
+  #headline { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(42px, 7.4vw, 88px);
+              line-height: .95; letter-spacing: -.005em; max-width: 16em; }
+  #subline { margin: 14px 0 0; max-width: 62ch; font-size: 17px; color: var(--muted); min-height: 26px; }
+
+  /* ticket input */
+  .ask { margin: 22px 0 28px; }
+  .ask-row { display: flex; gap: 12px; }
+  #text { flex: 1; min-width: 0; height: 56px; padding: 0 16px; font: 400 18px var(--body); color: var(--ink);
+          background: var(--panel); border: 2px solid var(--ink); border-radius: 4px; }
+  #text::placeholder { color: #7A8896; }
+  .go { height: 56px; padding: 0 28px; font-size: 17px; font-weight: 700; color: var(--panel); background: var(--ink);
+        border: 2px solid var(--ink); border-radius: 4px; cursor: pointer; }
+  .go:hover:not(:disabled) { background: var(--teal); border-color: var(--teal); }
+  .go:disabled { opacity: .55; cursor: progress; }
+  .try { margin: 12px 0 0; font-size: 15px; color: var(--muted); }
+  .link { background: none; border: 0; padding: 0; margin: 0 10px 0 0; font-size: inherit; color: var(--ink);
+          text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .link:hover { color: var(--teal); }
+
+  /* the board */
+  .boardhead { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
+  .gname { font-family: var(--body); font-weight: 700; font-size: 22px; letter-spacing: 0; }
+  .boardhead h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 28px; }
+  .legend { display: flex; gap: 18px; margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .legend li { display: flex; align-items: center; gap: 6px; }
+  .board { position: relative; border: 2px solid var(--ink); border-radius: 4px; overflow-x: auto; min-height: 230px;
+           background-color: var(--vellum);
+           background-image:
+             linear-gradient(var(--grid-major) 1px, transparent 1px),
+             linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+             linear-gradient(var(--grid-minor) 1px, transparent 1px),
+             linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+           background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px; }
+  .board svg { display: block; width: 100%; min-width: 820px; height: auto; }
+  .board svg text { font-family: var(--body); font-size: 12px; font-weight: 600; fill: var(--ink); pointer-events: none; }
+  .empty { padding: 70px 24px; text-align: center; color: var(--muted); }
+  .empty p { margin: 0 0 4px; }
+  .boardfoot { margin-top: 8px; text-align: right; font-size: 14px; }
+  .boardfoot .link { margin: 0; color: var(--muted); }
+
+  .arrowhead { fill: var(--ink); }
+  .e-about { stroke: var(--muted); stroke-width: 1; opacity: .55; }
+  .e-has { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; opacity: .7; }
+  .e-next, .e-start { stroke: var(--ink); stroke-width: 2; }
+  .guide { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 2 7; opacity: .45; }
+  .tkt { stroke: var(--ink); stroke-width: 1.5; }
+  .tkt.src-memory { fill: var(--teal); }
+  .tkt.src-exploring { fill: var(--amber); }
+  .topic-shape { fill: var(--ink); }
+  .board svg text.topic-name { fill: var(--panel); font-size: 15px; font-weight: 700; }
+  .board svg text.topic-sub { fill: #AEBCC8; font-size: 11px; font-weight: 400; }
+  .stepnode rect, .ghost rect { fill: var(--panel); stroke: var(--ink); stroke-width: 2; transition: fill .2s, stroke .2s; }
+  .stepnode.lit rect { fill: var(--teal-wash); stroke: var(--teal); }
+  .pending { opacity: 0; }
+  .born { transform-box: fill-box; transform-origin: center; animation: born .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+  @keyframes born { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+
+  #trial { transition: opacity .45s; }
+  #trial.fade { opacity: 0; }
+  .ghost rect { stroke: var(--amber); stroke-dasharray: 5 4; }
+  .ghost.kept rect { fill: var(--amber-wash); stroke-dasharray: none; }
+  .ghost.dead rect { stroke: var(--dead); }
+  .board svg .ghost.dead text { fill: var(--dead); }
+  .ghost .strike { stroke: var(--dead); stroke-width: 2; opacity: 0; }
+  .ghost.dead .strike { opacity: 1; }
+
+  .tok { opacity: 0; transition: transform .38s cubic-bezier(.5, 0, .2, 1), opacity .25s; }
+  .tok.on { opacity: 1; }
+  .tok-ring { fill: none; stroke-width: 2.5; }
+  .tok-dot { stroke: none; }
+  .tok.explore .tok-ring { stroke: var(--amber); }
+  .tok.explore .tok-dot { fill: var(--amber); }
+  .tok.recall .tok-ring { stroke: var(--teal); }
+  .tok.recall .tok-dot { fill: var(--teal); }
+
+  /* ledger */
+  .ledger { margin-top: 34px; }
+  .ledger h2, .why h2 { margin: 0 0 6px; font-family: var(--display); font-weight: 800; font-size: 28px; }
+  .row { display: grid; grid-template-columns: 1fr auto 84px 130px; gap: 16px; align-items: center;
+         width: 100%; padding: 11px 0; background: none; border: 0; border-bottom: 1px solid var(--grid-major);
+         font: inherit; color: inherit; text-align: left; cursor: pointer; }
+  .row:hover .what { text-decoration: underline; text-underline-offset: 3px; }
+  .row.picked { background: var(--teal-wash); }
+  .row .what { font-weight: 600; }
+  .pips { display: flex; gap: 3px; }
+  .pip { width: 12px; height: 12px; border-radius: 2px; }
+  .pip.src-memory { background: var(--teal); }
+  .pip.src-exploring { background: var(--amber); }
+  .row .n { text-align: right; font-weight: 700; }
+  .row .how { font-size: 14px; color: var(--muted); }
+  .none { color: var(--muted); padding: 10px 0; }
+
+  /* how the agents got there */
+  .why { margin-top: 34px; }
+  .why-for { margin: 0 0 4px; color: var(--muted); font-size: 15px; }
+  .trail { list-style: none; margin: 8px 0 0; padding: 0; }
+  .trail li { display: grid; grid-template-columns: 160px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--grid-major); }
+  .trail .who-agent { font-weight: 700; }
+  .trail .who-agent span { color: var(--teal); margin-right: 8px; }
+  .trail .note { max-width: 70ch; }
+  .fact { margin: 16px 0 0; padding: 4px 0 4px 14px; border-left: 4px solid var(--teal); max-width: 70ch; }
+  .fact b { display: block; font-size: 14px; color: var(--muted); font-weight: 600; }
+
+  footer { margin-top: 36px; font-size: 13px; color: var(--muted); max-width: 70ch; }
+
+  @media (max-width: 720px) {
+    .page { padding: 16px 16px 44px; }
+    .ask-row { flex-direction: column; }
+    .row { grid-template-columns: 1fr auto; }
+    .row .n, .row .how { text-align: left; }
+    .trail li { grid-template-columns: 1fr; gap: 4px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tok, #trial, .stepnode rect { transition: none; }
+    .born { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div class="brand">Support Bot That Learns</div>
+    <div class="who">
+      <span id="who-label">Customer</span>
+      <div class="tabs" role="group" aria-labelledby="who-label">
+        <button class="tab" type="button" data-tenant="acme" aria-pressed="true">acme</button>
+        <button class="tab" type="button" data-tenant="zeta" aria-pressed="false">zeta</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="lead">
+      <h1 id="headline" aria-live="polite">Send a ticket.</h1>
+      <p id="subline"></p>
+    </section>
+
+    <section class="ask">
+      <label class="sr" for="text">Describe the problem</label>
+      <div class="ask-row">
+        <input id="text" type="text" autocomplete="off" placeholder="Describe a problem, like “wifi not working”">
+        <button id="send" class="go" type="button">Solve ticket</button>
+      </div>
+      <p class="try">Try:
+        <button class="link" type="button">wifi not working</button>
+        <button class="link" type="button">my wifi is down again</button>
+        <button class="link" type="button">printer not printing</button>
+        <button class="link" type="button">forgot my password</button>
+      </p>
+    </section>
+
+    <section aria-label="Memory graph">
+      <div class="boardhead">
+        <h2 id="board-title">Graph: <span class="gname">tenant_acme</span></h2>
+        <ul class="legend">
+          <li><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="#0A7C6E" stroke="#19283A" stroke-width="1.5"/></svg>Ticket (ABOUT a topic)</li>
+          <li><svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true"><polygon points="4,1 16,1 19,8 16,15 4,15 1,8" fill="#19283A"/></svg>Topic (HAS_STEP)</li>
+          <li><svg width="20" height="16" viewBox="0 0 20 16" aria-hidden="true"><rect x="1.5" y="2.5" width="17" height="11" rx="2" fill="#F7FAFB" stroke="#19283A" stroke-width="2"/></svg>Step (NEXT step)</li>
+        </ul>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="boardfoot"><button id="reset" class="link" type="button">Clear acme’s memory</button></div>
+    </section>
+
+    <section class="why" aria-live="polite">
+      <h2>How it got there</h2>
+      <div id="why"><div class="none">Send a ticket, or pick one from the list below, to see which agents handled it and what each one wrote to the graph.</div></div>
+    </section>
+
+    <section class="ledger">
+      <h2>Tickets handled</h2>
+      <div id="ledger"></div>
+    </section>
+  </main>
+
+  <footer>
+    The memory is a real FalkorDB graph, one per customer. The solver that tries fixes is simulated so the demo needs no API key; swapping in a model changes one function.
+  </footer>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const STEP_MS = reduced ? 0 : 430;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+
+  let tenant = 'acme';
+  let busy = false;
+  let lastState = null;
+
+  // board geometry (SVG units)
+  const G = { laneH: 150, top: 85, ticketX: 44, topicX: 110, topicW: 132, topicH: 64,
+              slot0: 290, slotGap: 142, stepW: 124, stepH: 56, width: 1000 };
+  const laneY = (i) => G.top + G.laneH * i;
+  const stepX = (j) => G.slot0 + G.slotGap * j;
+
+  const EMPTY = '<div class="empty"><p>Nothing in this graph yet.</p><p>Send a ticket and the agent will lay down its first path.</p></div>';
+
+  function setHeadline(h, sub) {
+    $('headline').textContent = h;
+    $('subline').textContent = sub || '';
+  }
+
+  function wrap(text, max) {
+    const words = String(text).split(' ');
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      if (cur && (cur + ' ' + w).length > max) { lines.push(cur); cur = w; }
+      else cur = cur ? cur + ' ' + w : w;
+    }
+    if (cur) lines.push(cur);
+    return lines.slice(0, 3);
+  }
+
+  function label(text, cx, cy) {
+    const lines = wrap(text, 15);
+    const spans = lines.map((l, i) =>
+      '<tspan x="' + cx + '" y="' + (cy + (i - (lines.length - 1) / 2) * 14 + 4) + '">' + esc(l) + '</tspan>').join('');
+    return '<text text-anchor="middle">' + spans + '</text>';
+  }
+
+  function describe(state) {
+    const parts = Object.keys(state.paths).map((t) => t + ': ' + state.paths[t].join(', then '));
+    return 'Memory graph for tenant ' + tenant + '. ' + parts.join('. ') + '.';
+  }
+
+  function stepNode(action, j, cy, extraClass) {
+    const x = stepX(j), y = cy - G.stepH / 2;
+    return '<g class="stepnode ' + (extraClass || '') + '" data-i="' + j + '">' +
+      '<rect x="' + x + '" y="' + y + '" width="' + G.stepW + '" height="' + G.stepH + '" rx="3"/>' +
+      label(action, x + G.stepW / 2, cy) + '</g>';
+  }
+
+  function drawBoard(state, hideTopic) {
+    const board = $('board');
+    const topics = Object.keys(state.paths);
+    $('board-title').innerHTML = 'Graph: <span class="gname">tenant_' + esc(tenant) + '</span>';
+    if (!topics.length) { board.innerHTML = EMPTY; return; }
+
+    const W = G.width;
+    const H = topics.length * G.laneH + 20;
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(describe(state)) + '">';
+    s += '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">' +
+         '<path class="arrowhead" d="M0 0 L10 5 L0 10 z"/></marker></defs>';
+
+    topics.forEach((topic, i) => {
+      const cy = laneY(i);
+      const steps = state.paths[topic];
+      const tix = state.tickets.filter((t) => t.topic === topic);
+      const hidden = topic === hideTopic;
+      const tx0 = G.topicX, ty0 = cy - G.topicH / 2, tw = G.topicW, th = G.topicH;
+
+      s += '<g class="lane" data-topic="' + esc(topic) + '">';
+
+      // slot guide where trial steps appear
+      s += '<line class="guide" x1="' + G.slot0 + '" y1="' + cy + '" x2="' + (stepX(4) + G.stepW) + '" y2="' + cy + '"/>';
+
+      // tickets, each tied to the topic by an ABOUT edge
+      const n = tix.length;
+      const span = Math.min(110, Math.max(0, n - 1) * 16);
+      tix.forEach((t, k) => {
+        const ty = cy - span / 2 + (n > 1 ? (k * span) / (n - 1) : 0);
+        s += '<line class="e-about" x1="' + (G.ticketX + 6) + '" y1="' + ty + '" x2="' + tx0 + '" y2="' + cy + '"/>';
+        s += '<circle class="tkt src-' + esc(t.source) + '" cx="' + G.ticketX + '" cy="' + ty + '" r="6">' +
+             '<title>' + esc(t.text) + ': ' + plural(t.count, 'step') + ', ' +
+             (t.source === 'memory' ? 'from memory' : 'trial and error') + '</title></circle>';
+      });
+
+      // topic node
+      const pts = [[tx0 + 14, ty0], [tx0 + tw - 14, ty0], [tx0 + tw, cy], [tx0 + tw - 14, ty0 + th],
+                   [tx0 + 14, ty0 + th], [tx0, cy]].map((p) => p.join(',')).join(' ');
+      s += '<polygon class="topic-shape" points="' + pts + '"/>';
+      s += '<text class="topic-name" x="' + (tx0 + tw / 2) + '" y="' + (cy - 2) + '" text-anchor="middle">' + esc(topic) + '</text>';
+      s += '<text class="topic-sub" x="' + (tx0 + tw / 2) + '" y="' + (cy + 15) + '" text-anchor="middle">' + plural(n, 'ticket') + ((state.uses && state.uses[topic]) ? ', ' + plural(state.uses[topic], 'recall') : '') + '</text>';
+
+      // HAS_STEP edges (first one doubles as the start of the path)
+      s += '<line class="e-start" x1="' + (tx0 + tw) + '" y1="' + cy + '" x2="' + (stepX(0) - 2) + '" y2="' + cy + '" marker-end="url(#arrow)"/>';
+      steps.forEach((a, j) => {
+        if (j > 0) {
+          const sx = stepX(j) + G.stepW / 2;
+          s += '<path class="e-has" d="M' + (tx0 + tw / 2) + ' ' + (cy + th / 2) + ' C ' + (tx0 + tw / 2) + ' ' + (cy + 62) + ', ' +
+               sx + ' ' + (cy + 62) + ', ' + sx + ' ' + (cy + G.stepH / 2) + '"/>';
+        }
+      });
+
+      // steps and NEXT edges
+      steps.forEach((a, j) => {
+        s += stepNode(a, j, cy, hidden ? 'pending' : '');
+        if (j < steps.length - 1) {
+          s += '<line class="e-next' + (hidden ? ' pending' : '') + '" x1="' + (stepX(j) + G.stepW) + '" y1="' + cy +
+               '" x2="' + (stepX(j + 1) - 2) + '" y2="' + cy + '" marker-end="url(#arrow)"/>';
+        }
+      });
+      s += '</g>';
+    });
+
+    s += '<g id="trial"></g><g id="tok" class="tok"><circle class="tok-ring" r="11"/><circle class="tok-dot" r="4"/></g></svg>';
+    board.innerHTML = s;
+  }
+
+  function place(tok, x, y, instant) {
+    if (instant) tok.style.transition = 'none';
+    tok.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+    if (instant) { void tok.getBoundingClientRect(); tok.style.transition = ''; }
+  }
+
+  // The agent walking the graph: this is the demo.
+  async function walk(result, state) {
+    const board = $('board');
+    const topics = Object.keys(state.paths);
+    const cy = laneY(topics.indexOf(result.topic));
+    const kept = state.paths[result.topic];
+    const tok = board.querySelector('#tok');
+    if (!tok) return;
+    const startX = G.topicX + G.topicW;
+    const centerX = (j) => stepX(j) + G.stepW / 2;
+
+    if (result.source === 'memory') {
+      tok.setAttribute('class', 'tok recall');
+      place(tok, startX, cy, true);
+      tok.classList.add('on');
+      const nodes = board.querySelectorAll('.lane[data-topic="' + result.topic + '"] .stepnode');
+      for (let j = 0; j < kept.length; j++) {
+        setHeadline('Replaying the saved path, step ' + (j + 1) + '.', '');
+        place(tok, centerX(j), cy);
+        await sleep(STEP_MS);
+        if (nodes[j]) nodes[j].classList.add('lit');
+      }
+      await sleep(STEP_MS * 0.6);
+      tok.classList.remove('on');
+      return;
+    }
+
+    // trial and error: ghost steps appear in the slots, the token tries each one
+    tok.setAttribute('class', 'tok explore');
+    const trial = board.querySelector('#trial');
+    trial.innerHTML = result.steps.map((a, j) => {
+      const x = stepX(j), y = cy - G.stepH / 2;
+      return '<g class="ghost"><rect x="' + x + '" y="' + y + '" width="' + G.stepW + '" height="' + G.stepH + '" rx="3"/>' +
+             label(a, x + G.stepW / 2, cy) +
+             '<line class="strike" x1="' + (x + 8) + '" y1="' + (y + G.stepH - 8) + '" x2="' + (x + G.stepW - 8) + '" y2="' + (y + 8) + '"/></g>';
+    }).join('');
+    const ghosts = trial.querySelectorAll('.ghost');
+    place(tok, startX, cy, true);
+    tok.classList.add('on');
+    for (let j = 0; j < result.steps.length; j++) {
+      setHeadline('Trying fix ' + (j + 1) + ' of ' + result.steps.length + '.', '');
+      place(tok, centerX(j), cy);
+      await sleep(STEP_MS);
+      ghosts[j].classList.add(kept.indexOf(result.steps[j]) >= 0 ? 'kept' : 'dead');
+    }
+    await sleep(STEP_MS * 0.8);
+    tok.classList.remove('on');
+    trial.classList.add('fade');
+    board.querySelectorAll('.pending').forEach((el) => { el.classList.remove('pending'); el.classList.add('born'); });
+    await sleep(reduced ? 0 : 550);
+  }
+
+  const AGENT_NAMES = { triage: 'Triage agent', resolver: 'Resolver agent', learner: 'Learner agent' };
+
+  function renderWhy(ticket, state) {
+    const chain = ticket.chain || [];
+    let html = '<p class="why-for">For the ticket “' + esc(ticket.text) + '”. The agents only talk to each other through the graph.</p>';
+    if (!chain.length) {
+      html += '<div class="none">This ticket was handled before agent trails were recorded.</div>';
+    } else {
+      html += '<ol class="trail">' + chain.map((c) =>
+        '<li><div class="who-agent"><span>' + c.seq + '</span>' + esc(AGENT_NAMES[c.agent] || c.agent) + '</div>' +
+        '<div class="note">' + esc(c.note) + '</div></li>').join('') + '</ol>';
+    }
+    const fact = state && state.facts && state.facts[ticket.topic];
+    if (fact) {
+      html += '<p class="fact"><b>What the graph now knows (based on ' + plural(fact.evidence, 'ticket') + ')</b>' + esc(fact.text) + '</p>';
+    }
+    $('why').innerHTML = html;
+  }
+
+  function renderLedger(state, pickedId) {
+    lastState = state;
+    const rows = state.tickets.slice().reverse().map((t) => {
+      let pips = '';
+      for (let k = 0; k < t.count; k++) pips += '<span class="pip src-' + esc(t.source) + '"></span>';
+      return '<button type="button" class="row' + (t.id === pickedId ? ' picked' : '') + '" data-id="' + t.id + '">' +
+             '<span class="what">' + esc(t.text) + '</span>' +
+             '<span class="pips" aria-hidden="true">' + pips + '</span>' +
+             '<span class="n">' + plural(t.count, 'step') + '</span>' +
+             '<span class="how">' + (t.source === 'memory' ? 'from memory' : 'trial and error') + '</span></button>';
+    });
+    $('ledger').innerHTML = rows.length ? rows.join('') : '<div class="none">No tickets yet for ' + esc(tenant) + '.</div>';
+    $('ledger').querySelectorAll('.row').forEach((b) => b.onclick = () => {
+      const t = lastState.tickets.find((x) => String(x.id) === b.dataset.id);
+      if (!t) return;
+      $('ledger').querySelectorAll('.row').forEach((r) => r.classList.toggle('picked', r === b));
+      renderWhy(t, lastState);
+    });
+  }
+
+  async function getState() {
+    const res = await fetch('/api/state/' + tenant);
+    return res.json();
+  }
+
+  function idle(state) {
+    const n = state.tickets.length;
+    setHeadline('Send a ticket.', n
+      ? plural(n, 'ticket') + ' handled for ' + tenant + '. The graph below is its memory, and no other customer can see it.'
+      : 'Customer ' + tenant + ' has its own graph. Whatever the agent learns here stays here.');
+  }
+
+  async function refresh() {
+    const state = await getState();
+    drawBoard(state, null);
+    renderLedger(state);
+    idle(state);
+    $('why').innerHTML = '<div class="none">Send a ticket, or pick one from the list below, to see which agents handled it and what each one wrote to the graph.</div>';
+  }
+
+  function finish(result, state) {
+    const n = result.count;
+    const first = state.tickets.find((t) => t.topic === result.topic);
+    if (result.source === 'memory') {
+      setHeadline('Solved in ' + plural(n, 'step') + ', from memory.',
+        first && first.count !== n ? 'The first ' + result.topic + ' ticket took ' + plural(first.count, 'step') + ' by trial and error.' : '');
+    } else {
+      const k = state.paths[result.topic].length;
+      setHeadline('Solved in ' + plural(n, 'step') + ', by trial and error.',
+        'Only the ' + plural(k, 'step') + ' that worked ' + (k === 1 ? 'was' : 'were') + ' saved to the graph. Send another ' + result.topic + ' ticket and it skips the rest.');
+    }
+  }
+
+  function setBusy(b) {
+    busy = b;
+    $('send').disabled = b;
+    $('text').disabled = b;
+    if (!b) $('text').focus();
+  }
+
+  async function solve(text) {
+    text = text.trim();
+    if (!text || busy) return;
+    setBusy(true);
+    setHeadline('Working on it.', '');
+    try {
+      const res = await fetch('/api/ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant: tenant, text: text })
+      });
+      const result = await res.json();
+      if (result.error) {
+        setHeadline('Couldn’t match a topic.', result.error + '. Try one of the examples above.');
+        return;
+      }
+      const state = await getState();
+      drawBoard(state, result.source === 'exploring' ? result.topic : null);
+      renderLedger(state);
+      await walk(result, state);
+      finish(result, state);
+      const mine = state.tickets.find((t) => t.id === result.ticket_id);
+      if (mine) { renderWhy(mine, state); renderLedger(state, mine.id); }
+    } catch (e) {
+      setHeadline('The server didn’t answer.', 'Check that python app.py is still running in your terminal, then try again.');
+    } finally {
+      $('text').value = '';
+      setBusy(false);
+    }
+  }
+
+  $('send').onclick = () => solve($('text').value);
+  $('text').addEventListener('keydown', (e) => { if (e.key === 'Enter') solve($('text').value); });
+  document.querySelectorAll('.link').forEach((b) => {
+    if (b.id !== 'reset') b.onclick = () => solve(b.textContent);
+  });
+  document.querySelectorAll('.tab').forEach((b) => b.onclick = () => {
+    if (busy) return;
+    tenant = b.dataset.tenant;
+    document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-pressed', String(t === b)));
+    $('reset').textContent = 'Clear ' + tenant + '’s memory';
+    refresh();
+  });
+  $('reset').onclick = async () => {
+    if (busy) return;
+    await fetch('/api/reset/' + tenant, { method: 'POST' });
+    refresh();
+  };
+
+  refresh();
+</script>
+</body>
+</html>
