@@ -1,4 +1,3 @@
 falkordb
 flask
-# optional: lets the triage agent use Claude instead of keyword matching
-# anthropic
+gunicorn
