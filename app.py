@@ -1,9 +1,3 @@
-"""
-Demo web page for the Support Bot That Learns.
-Run:  python app.py     then open  http://127.0.0.1:5000
-The page itself lives in index.html (same folder).
-"""
-
 import os
 from flask import Flask, request, jsonify, send_file
 import memory_agent as m
