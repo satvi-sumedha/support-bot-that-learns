@@ -25,13 +25,13 @@ import json
 import os
 
 from falkordb import FalkorDB
-import config
+
 
 db = FalkorDB(
-    host=config.HOST,
-    port=config.PORT,
-    username=config.USERNAME,
-    password=config.PASSWORD,
+    host=os.environ["FALKORDB_HOST"],
+    port=int(os.environ["FALKORDB_PORT"]),
+    username=os.environ["FALKORDB_USERNAME"],
+    password=os.environ["FALKORDB_PASSWORD"]
 )
 
 
