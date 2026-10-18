@@ -153,3 +153,5 @@ Requirements: Python 3.10+ and a FalkorDB instance (FalkorDB Cloud or local Dock
 ## Built with
 
 Python, Flask, and [FalkorDB](https://www.falkordb.com/) through the `falkordb` Python client.
+
+DEMO VIDEO- (https://youtu.be/4ESb8tWhVUk)
