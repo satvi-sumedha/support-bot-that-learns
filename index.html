@@ -31,7 +31,6 @@
 
   .page { max-width: 1120px; margin: 0 auto; padding: 20px 24px 56px; }
 
-  /* top bar */
   .top { display: flex; justify-content: space-between; align-items: center; gap: 16px;
          padding-bottom: 14px; border-bottom: 2px solid var(--ink); flex-wrap: wrap; }
   .brand { font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: .01em; }
@@ -41,13 +40,12 @@
   .tab + .tab { border-left: 2px solid var(--ink); }
   .tab[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
 
-  /* live headline */
   .lead { padding: 34px 0 6px; min-height: 176px; }
   #headline { margin: 0; font-family: var(--display); font-weight: 800; font-size: clamp(42px, 7.4vw, 88px);
               line-height: .95; letter-spacing: -.005em; max-width: 16em; }
   #subline { margin: 14px 0 0; max-width: 62ch; font-size: 17px; color: var(--muted); min-height: 26px; }
 
-  /* ticket input */
+  
   .ask { margin: 22px 0 28px; }
   .ask-row { display: flex; gap: 12px; }
   #text { flex: 1; min-width: 0; height: 56px; padding: 0 16px; font: 400 18px var(--body); color: var(--ink);
@@ -62,7 +60,6 @@
           text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
   .link:hover { color: var(--teal); }
 
-  /* the board */
   .boardhead { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
   .gname { font-family: var(--body); font-weight: 700; font-size: 22px; letter-spacing: 0; }
   .boardhead h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 28px; }
@@ -118,7 +115,6 @@
   .tok.recall .tok-ring { stroke: var(--teal); }
   .tok.recall .tok-dot { fill: var(--teal); }
 
-  /* ledger */
   .ledger { margin-top: 34px; }
   .ledger h2, .why h2 { margin: 0 0 6px; font-family: var(--display); font-weight: 800; font-size: 28px; }
   .row { display: grid; grid-template-columns: 1fr auto 84px 130px; gap: 16px; align-items: center;
@@ -135,7 +131,6 @@
   .row .how { font-size: 14px; color: var(--muted); }
   .none { color: var(--muted); padding: 10px 0; }
 
-  /* how the agents got there */
   .why { margin-top: 34px; }
   .why-for { margin: 0 0 4px; color: var(--muted); font-size: 15px; }
   .trail { list-style: none; margin: 8px 0 0; padding: 0; }
@@ -353,7 +348,6 @@
     if (instant) { void tok.getBoundingClientRect(); tok.style.transition = ''; }
   }
 
-  // The agent walking the graph: this is the demo.
   async function walk(result, state) {
     const board = $('board');
     const topics = Object.keys(state.paths);
@@ -380,7 +374,6 @@
       return;
     }
 
-    // trial and error: ghost steps appear in the slots, the token tries each one
     tok.setAttribute('class', 'tok explore');
     const trial = board.querySelector('#trial');
     trial.innerHTML = result.steps.map((a, j) => {
