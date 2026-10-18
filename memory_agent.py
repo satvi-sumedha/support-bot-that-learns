@@ -44,11 +44,6 @@ def reset(tenant):
     """Wipe a tenant's graph (so the demo can start fresh)."""
     graph_for(tenant).query("MATCH (n) DETACH DELETE n")
 
-
-# ---------------------------------------------------------------
-# PROCEDURAL MEMORY: saved paths
-# ---------------------------------------------------------------
-
 def get_path(tenant, topic):
     """Return the saved winning steps for this topic (empty list if none)."""
     g = graph_for(tenant)
@@ -81,13 +76,6 @@ def save_path(tenant, topic, actions):
             {"topic": topic, "p1": pos, "p2": pos + 1},
         )
 
-
-# ---------------------------------------------------------------
-# THE WORLD THE AGENTS WORK IN (simulated solver for now)
-# ---------------------------------------------------------------
-# CANDIDATES = everything an agent might try, in the order it would guess.
-# WORKING    = the steps that actually fix the problem (the "secret").
-# explore() is the only simulated part. Swap it for an LLM call to go live.
 
 CANDIDATES = {
     "wifi": ["restart browser", "clear cache", "restart laptop",
@@ -141,17 +129,12 @@ def classify(text):
             if word == "none":
                 return None, ""
         except Exception:
-            pass  # fall back to keywords below
+            pass  
     lowered = text.lower()
     for topic in CANDIDATES:
         if topic in lowered:
             return topic, "Matched the keyword '" + topic + "' in the ticket."
     return None, ""
-
-
-# ---------------------------------------------------------------
-# THE THREE AGENTS (they share state only through the graph)
-# ---------------------------------------------------------------
 
 def _log_work(g, agent, ticket_id, seq, note):
     """Record who worked on a ticket, in what order, and what they did."""
@@ -232,7 +215,6 @@ def learner(tenant, ticket_id):
                        {"topic": topic}).result_set[0][0]
         note = "The saved path worked again. It has now been replayed " + str(uses) + " time(s)."
 
-    # semantic memory: a short fact distilled from the episodes
     evidence = g.query(
         "MATCH (k:Ticket {status:'resolved'})-[:ABOUT]->(t:Topic {name:$topic}) RETURN count(k)",
         {"topic": topic},
@@ -275,11 +257,6 @@ def handle_ticket(tenant, text):
     r["chain"] = chain
     return r
 
-
-# ---------------------------------------------------------------
-# WHAT THE WEB PAGE READS
-# ---------------------------------------------------------------
-
 def get_state(tenant):
     """Everything the web page needs: paths, usage, facts, tickets and agent trails."""
     g = graph_for(tenant)
@@ -311,11 +288,6 @@ def get_state(tenant):
                         "source": source, "chain": chains.get(tid, [])})
 
     return {"paths": paths, "uses": uses, "facts": facts, "tickets": tickets}
-
-
-# ---------------------------------------------------------------
-# TERMINAL DEMO
-# ---------------------------------------------------------------
 
 if __name__ == "__main__":
     reset("acme")
